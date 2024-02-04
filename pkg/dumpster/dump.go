@@ -137,7 +137,7 @@ func (d *Dumpster) getTables() ([]string, error) {
 		if t.Valid {
 			tables = append(tables, t.String)
 		} else {
-			slog.Warn("table is not valid: %v", t)
+			slog.Warn("table is not valid", slog.String("table", t.String))
 		}
 	}
 
