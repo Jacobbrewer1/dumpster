@@ -1,0 +1,45 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "Feature: "
+labels: [ "enhancement" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request!
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: Please describe the feature you would like to see added.
+      placeholder: I would like to see...
+      value: "I would like to see..."
+    validations:
+      required: true
+  - type: textarea
+    id: feature-implementation
+    attributes:
+      label: Feature Implementation
+      description: Please describe how you would like to see this feature implemented.
+      placeholder: I would like to see this feature implemented by...
+      value: "I would like to see this feature implemented by..."
+    validations:
+      required: true
+  - type: textarea
+    id: feature-impact
+    attributes:
+      label: Feature Impact
+      description: Please describe how you think this feature will impact the project.
+      placeholder: I think this feature will impact the project by...
+      value: "I think this feature will impact the project by..."
+    validations:
+      required: true
+  - type: textarea
+    id: feature-acceptance
+    attributes:
+      label: Feature Acceptance Criteria
+      description: Please describe what you think the acceptance criteria for this feature should be.
+      placeholder: The acceptance criteria for this feature should be...
+      value: "The acceptance criteria for this feature should be..."
+    validations:
+      required: true
