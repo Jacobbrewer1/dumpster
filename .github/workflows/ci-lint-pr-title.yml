@@ -1,0 +1,29 @@
+name: "Lint PR Title"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: "Lint title"
+    permissions:
+      statuses: write
+    steps:
+      - uses: aslafy-z/conventional-pr-title-action@v3
+        with:
+          success-state: Title follows conventional commits.
+          failure-state: Title does not follow conventional commits.
+          context-name: conventional-pr-title
+          preset: conventional-changelog-angular@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
