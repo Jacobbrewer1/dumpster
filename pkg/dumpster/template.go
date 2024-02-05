@@ -3,6 +3,8 @@ package dumpster
 const tmpl = `
 -- Server version	{{ .ServerVersion }}
 
+DROP DATABASE IF EXISTS {{ .Database }};
+
 {{range .Tables}}
 -- Table structure for table {{ .Name }}
 DROP TABLE IF EXISTS {{ .Name }};

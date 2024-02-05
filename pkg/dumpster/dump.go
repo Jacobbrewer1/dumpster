@@ -1,6 +1,7 @@
 package dumpster
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -19,16 +20,17 @@ type table struct {
 }
 
 type dump struct {
+	Database      string
 	ServerVersion string
 	Tables        []*table
 	CompleteTime  string
 }
 
-// Dump creates a new dump of the database
-func (d *Dumpster) Dump() (string, error) {
+// DumpFile creates a new dump of the database
+func (d *Dumpster) DumpFile() (string, error) {
 	timestamp := time.Now().Format(time.RFC3339)
 
-	timestamp = strings.Replace(timestamp, ":", "-", -1)
+	data, err := d.Dump()
 
 	// Get the PWD
 	pwd, err := os.Getwd()
@@ -58,8 +60,24 @@ func (d *Dumpster) Dump() (string, error) {
 		}
 	}(f)
 
+	// Write the dump to the file
+	if _, err := f.WriteString(data); err != nil {
+		return "", fmt.Errorf("error writing to file: %w", err)
+	}
+
+	return p, nil
+}
+
+// Dump creates a new dump of the database and returns the content.
+func (d *Dumpster) Dump() (string, error) {
+	schemaName, err := d.getSchemaName()
+	if err != nil {
+		return "", fmt.Errorf("error getting schema name: %w", err)
+	}
+
 	data := dump{
-		Tables: make([]*table, 0),
+		Database: schemaName,
+		Tables:   make([]*table, 0),
 	}
 
 	// Get server version
@@ -86,17 +104,17 @@ func (d *Dumpster) Dump() (string, error) {
 	// Set complete time
 	data.CompleteTime = time.Now().Format(time.RFC3339)
 
-	// Write dump to file
 	t, err := template.New("mysqldump").Parse(tmpl)
 	if err != nil {
 		return "", fmt.Errorf("error parsing template: %w", err)
 	}
 
-	if err = t.Execute(f, data); err != nil {
+	b := new(bytes.Buffer)
+	if err = t.Execute(b, data); err != nil {
 		return "", fmt.Errorf("error executing template: %w", err)
 	}
 
-	return p, nil
+	return b.String(), nil
 }
 
 func (d *Dumpster) getTables() ([]string, error) {
@@ -285,4 +303,32 @@ func (d *Dumpster) createTableValues(name string) (string, error) {
 	}
 
 	return strings.Join(dataText, ","), nil
+}
+
+func (d *Dumpster) getSchemaName() (string, error) {
+	sqlStmt := "SELECT DATABASE()"
+
+	// Prepare statement for reading data
+	stmt, err := d.db.Prepare(sqlStmt)
+	if err != nil {
+		return "", fmt.Errorf("error preparing statement: %w", err)
+	}
+
+	defer func(stmt *sql.Stmt) {
+		if err := stmt.Close(); err != nil {
+			slog.Warn("error closing statement: %v", err)
+		}
+	}(stmt)
+
+	// Execute statement
+	var schema sql.NullString
+	if err := stmt.QueryRow().Scan(&schema); err != nil {
+		return "", fmt.Errorf("error executing statement: %w", err)
+	}
+
+	if !schema.Valid {
+		return "", errors.New("returned schema is not valid")
+	}
+
+	return schema.String, nil
 }
