@@ -34,7 +34,7 @@ func (m *dumpCmd) Synopsis() string {
 
 func (m *dumpCmd) Usage() string {
 	return `dump:
-Creates a MySQL dump of the database.
+  Creates a MySQL dump of the database.
 `
 }
 
