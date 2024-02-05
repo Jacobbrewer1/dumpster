@@ -16,34 +16,34 @@ import (
 	"github.com/google/subcommands"
 )
 
-type mysqlCmd struct {
-	// gcs is the bucket to upload the dump to
+type dumpCmd struct {
+	// gcs is the bucket to upload the dump to. Setting this will enable GCS.
 	gcs string
 
-	// dbConnStr is the connection string to the database
+	// dbConnStr is the connection string to the database.
 	dbConnStr string
 }
 
-func (m *mysqlCmd) Name() string {
-	return "mysql"
+func (m *dumpCmd) Name() string {
+	return "dump"
 }
 
-func (m *mysqlCmd) Synopsis() string {
+func (m *dumpCmd) Synopsis() string {
 	return "Creates a MySQL dump of the database"
 }
 
-func (m *mysqlCmd) Usage() string {
-	return `mysql:
-  Creates a MySQL dump of the database.
+func (m *dumpCmd) Usage() string {
+	return `dump:
+Creates a MySQL dump of the database.
 `
 }
 
-func (m *mysqlCmd) SetFlags(f *flag.FlagSet) {
+func (m *dumpCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&m.gcs, "gcs", "", "The GCS bucket to upload the dump to (Requires GCS_CREDENTIALS environment variable to be set)")
 	f.StringVar(&m.dbConnStr, "db-conn", "", "The connection string to the database")
 }
 
-func (m *mysqlCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (m *dumpCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	err := logging.Init(appName)
 	if err != nil {
 		slog.Error("error initializing logging", slog.String(logging.KeyError, err.Error()))
@@ -88,7 +88,7 @@ func (m *mysqlCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{})
 	return subcommands.ExitSuccess
 }
 
-func (m *mysqlCmd) uploadDump(pathToFile string) error {
+func (m *dumpCmd) uploadDump(pathToFile string) error {
 	if m.gcs == "" {
 		return nil
 	}
