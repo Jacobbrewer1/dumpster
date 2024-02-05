@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
+	"time"
 
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
 	"github.com/Jacobbrewer1/dumpster/pkg/dumpster"
@@ -22,28 +22,32 @@ type dumpCmd struct {
 
 	// dbConnStr is the connection string to the database.
 	dbConnStr string
+
+	// purge is the number of days to keep data for. If 0 (or not set), data will not be purged.
+	purge int
 }
 
-func (m *dumpCmd) Name() string {
+func (c *dumpCmd) Name() string {
 	return "dump"
 }
 
-func (m *dumpCmd) Synopsis() string {
+func (c *dumpCmd) Synopsis() string {
 	return "Creates a MySQL dump of the database"
 }
 
-func (m *dumpCmd) Usage() string {
+func (c *dumpCmd) Usage() string {
 	return `dump:
   Creates a MySQL dump of the database.
 `
 }
 
-func (m *dumpCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&m.gcs, "gcs", "", "The GCS bucket to upload the dump to (Requires GCS_CREDENTIALS environment variable to be set)")
-	f.StringVar(&m.dbConnStr, "db-conn", "", "The connection string to the database")
+func (c *dumpCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&c.gcs, "gcs", "", "The GCS bucket to upload the dump to (Requires GCS_CREDENTIALS environment variable to be set)")
+	f.StringVar(&c.dbConnStr, "db-conn", "", "The connection string to the database")
+	f.IntVar(&c.purge, "purge", 0, "The number of days to keep data for. If 0 (or not set), data will not be purged.")
 }
 
-func (m *dumpCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	err := logging.Init(appName)
 	if err != nil {
 		slog.Error("error initializing logging", slog.String(logging.KeyError, err.Error()))
@@ -51,13 +55,14 @@ func (m *dumpCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) 
 	}
 
 	// Check if the database connection string is set
-	if m.dbConnStr == "" {
+	if c.dbConnStr == "" {
 		slog.Error("database connection string not set")
+		f.Usage()
 		return subcommands.ExitUsageError
 	}
 
 	// Open database connection
-	db, err := sql.Open("mysql", m.dbConnStr)
+	db, err := sql.Open("mysql", c.dbConnStr)
 	if err != nil {
 		slog.Error("error opening database", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
@@ -74,43 +79,114 @@ func (m *dumpCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) 
 	d := dumpster.NewDumpster(db)
 
 	// Create the dump
-	f, err := d.Dump()
+	fc, err := d.Dump()
 	if err != nil {
 		slog.Error("error creating dump", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
 
-	if err := m.uploadDump(f); err != nil {
+	if err := c.uploadDump(ctx, fc); err != nil {
 		slog.Error("error uploading dump", slog.String(logging.KeyError, err.Error()))
+		return subcommands.ExitFailure
+	}
+
+	slog.Info("Dump file created")
+
+	// Purge the data
+	if err := c.purgeData(ctx); err != nil {
+		slog.Error("error purging data", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
 
 	return subcommands.ExitSuccess
 }
 
-func (m *dumpCmd) uploadDump(pathToFile string) error {
-	if m.gcs == "" {
+func (c *dumpCmd) uploadDump(ctx context.Context, fileContents string) error {
+	if c.gcs == "" {
 		return nil
 	}
 
-	if err := dataaccess.ConnectGCS(m.gcs); err != nil {
+	if err := dataaccess.ConnectGCS(c.gcs); err != nil {
 		return fmt.Errorf("error connecting to GCS: %w", err)
 	}
 
-	// Get the file from the file system
-	file, err := os.ReadFile(pathToFile)
-	if err != nil {
-		return fmt.Errorf("error reading file: %w", err)
-	}
-
-	// Only keep the file name
-	_, fileName := filepath.Split(pathToFile)
+	timestamp := time.Now().UTC().Format(time.RFC3339)
 
 	// Upload the dump
-	err = dataaccess.GCS.SaveFile(context.Background(), fmt.Sprintf("dumps/%s", fileName), file)
+	err := dataaccess.GCS.SaveFile(ctx, fmt.Sprintf("dumps/%s", timestamp), []byte(fileContents))
 	if err != nil {
 		return fmt.Errorf("error uploading dump: %w", err)
 	}
+
+	return nil
+}
+
+func (c *dumpCmd) purgeData(ctx context.Context) error {
+	if c.purge == 0 {
+		slog.Debug("Purge not set, data will not be purged")
+		return nil
+	}
+
+	// Check local file system for dump files
+	files, err := os.ReadDir("dumps")
+	if err != nil {
+		return fmt.Errorf("error reading dump directory: %w", err)
+	}
+
+	// Check if there are any files to purge
+	if len(files) == 0 {
+		slog.Debug("No files to purge")
+		return nil
+	}
+
+	localCount := 0
+
+	// Purge the local file system
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		// Parse the file date from the file name
+		fileDate, err := time.Parse(time.RFC3339, file.Name())
+		if err != nil {
+			slog.Warn(fmt.Sprintf("Error parsing file date from file name: %s", file.Name()))
+			continue
+		}
+
+		// Check if the file date is before the purge date
+		if fileDate.After(time.Now().UTC().AddDate(0, 0, -c.purge)) {
+			continue
+		}
+
+		// Delete the file
+		err = os.Remove(fmt.Sprintf("dumps/%s", file.Name()))
+		if err != nil {
+			return fmt.Errorf("error deleting file: %w", err)
+		}
+
+		slog.Info(fmt.Sprintf("Purged file: %s", file.Name()))
+		localCount++
+	}
+
+	if localCount > 0 {
+		slog.Info(fmt.Sprintf("Purged %d files locally", localCount))
+	} else {
+		slog.Debug("No files to purge locally")
+	}
+
+	// Calculate the date to purge from
+	from := time.Now().UTC().AddDate(0, 0, -c.purge)
+
+	// Set the purge date to midnight
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
+
+	// Purge the data
+	num, err := dataaccess.GCS.Purge(ctx, from)
+	if err != nil {
+		return fmt.Errorf("error purging data from GCS: %w", err)
+	}
+	slog.Info(fmt.Sprintf("Purged %d files from GCS", num))
 
 	return nil
 }
