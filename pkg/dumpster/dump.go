@@ -31,6 +31,9 @@ func (d *Dumpster) DumpFile() (string, error) {
 	timestamp := time.Now().Format(time.RFC3339)
 
 	data, err := d.Dump()
+	if err != nil {
+		return "", fmt.Errorf("error creating dump: %w", err)
+	}
 
 	// Get the PWD
 	pwd, err := os.Getwd()
