@@ -20,7 +20,7 @@ func main() {
 	subcommands.Register(subcommands.CommandsCommand(), "")
 
 	subcommands.Register(new(versionCmd), "")
-	subcommands.Register(new(mysqlCmd), "")
+	subcommands.Register(new(dumpCmd), "")
 
 	flag.Parse()
 	ctx := context.Background()
