@@ -44,7 +44,7 @@ func (p *purgeCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	if p.gcs != "" {
 		got := os.Getenv(dataaccess.EnvGCSCredentials)
 		if got == "" {
-			slog.Error(fmt.Sprintf("GCS_CREDENTIALS environment variable not set"))
+			slog.Error("GCS_CREDENTIALS environment variable not set")
 			f.Usage()
 			return subcommands.ExitUsageError
 		}
