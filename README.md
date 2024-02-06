@@ -21,7 +21,7 @@ go get -u github.com/Jacobbrewer1/dumpster
 The tool is very simple to use. You can run the following command to see the available options:
 
 ```bash
-dumpster commads
+dumpster commands
 ```
 
 ### Docker
