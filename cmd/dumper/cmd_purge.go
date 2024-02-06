@@ -4,12 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/google/subcommands"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
+	"github.com/google/subcommands"
 )
 
 type purgeCmd struct {
