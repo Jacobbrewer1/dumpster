@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	envGCSCredentials = "GCS_CREDENTIALS"
+	EnvGCSCredentials = "GCS_CREDENTIALS"
 )
 
 var GCS Storage
@@ -143,13 +143,15 @@ func (s *storageImpl) Purge(ctx context.Context, from time.Time) (int, error) {
 		if errors.Is(err, iterator.Done) {
 			// There are no more files, so break out of the loop.
 			break
+		} else if err != nil {
+			return 0, fmt.Errorf("error getting file next: %w", err)
 		}
 
 		// Get the file name.
 		fileName := attrs.Name
 
-		// Ignore JSON files.
-		if strings.HasSuffix(fileName, ".json") {
+		// Ignore all non-SQL files.
+		if !strings.HasSuffix(fileName, ".sql") {
 			continue
 		}
 
@@ -157,7 +159,7 @@ func (s *storageImpl) Purge(ctx context.Context, from time.Time) (int, error) {
 		fileName = fileName[strings.LastIndex(fileName, "/")+1:]
 
 		// Remove the file extension.
-		fileName = fileName[:len(fileName)-len(".yaml")]
+		fileName = fileName[:len(fileName)-len(".sql")]
 
 		// Parse the file date from the file name.
 		fileDate, err := time.Parse(time.RFC3339, fileName)
@@ -185,7 +187,7 @@ func (s *storageImpl) Purge(ctx context.Context, from time.Time) (int, error) {
 
 func ConnectGCS(gcsBucket string) error {
 	// Get the service account credentials from the environment variable.
-	gcsCredentials := os.Getenv(envGCSCredentials)
+	gcsCredentials := os.Getenv(EnvGCSCredentials)
 	if gcsCredentials == "" {
 		return errors.New("no GCS credentials provided")
 	}

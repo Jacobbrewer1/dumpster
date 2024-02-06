@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
@@ -93,7 +92,7 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	slog.Info("Dump file created")
 
 	// Purge the data
-	if err := c.purgeData(ctx); err != nil {
+	if err := purgeData(ctx, c.purge); err != nil {
 		slog.Error("error purging data", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
@@ -113,80 +112,10 @@ func (c *dumpCmd) uploadDump(ctx context.Context, fileContents string) error {
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 
 	// Upload the dump
-	err := dataaccess.GCS.SaveFile(ctx, fmt.Sprintf("dumps/%s", timestamp), []byte(fileContents))
+	err := dataaccess.GCS.SaveFile(ctx, fmt.Sprintf("dumps/%s.sql", timestamp), []byte(fileContents))
 	if err != nil {
 		return fmt.Errorf("error uploading dump: %w", err)
 	}
-
-	return nil
-}
-
-func (c *dumpCmd) purgeData(ctx context.Context) error {
-	if c.purge == 0 {
-		slog.Debug("Purge not set, data will not be purged")
-		return nil
-	}
-
-	// Check local file system for dump files
-	files, err := os.ReadDir("dumps")
-	if err != nil {
-		return fmt.Errorf("error reading dump directory: %w", err)
-	}
-
-	// Check if there are any files to purge
-	if len(files) == 0 {
-		slog.Debug("No files to purge")
-		return nil
-	}
-
-	localCount := 0
-
-	// Purge the local file system
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		// Parse the file date from the file name
-		fileDate, err := time.Parse(time.RFC3339, file.Name())
-		if err != nil {
-			slog.Warn(fmt.Sprintf("Error parsing file date from file name: %s", file.Name()))
-			continue
-		}
-
-		// Check if the file date is before the purge date
-		if fileDate.After(time.Now().UTC().AddDate(0, 0, -c.purge)) {
-			continue
-		}
-
-		// Delete the file
-		err = os.Remove(fmt.Sprintf("dumps/%s", file.Name()))
-		if err != nil {
-			return fmt.Errorf("error deleting file: %w", err)
-		}
-
-		slog.Info(fmt.Sprintf("Purged file: %s", file.Name()))
-		localCount++
-	}
-
-	if localCount > 0 {
-		slog.Info(fmt.Sprintf("Purged %d files locally", localCount))
-	} else {
-		slog.Debug("No files to purge locally")
-	}
-
-	// Calculate the date to purge from
-	from := time.Now().UTC().AddDate(0, 0, -c.purge)
-
-	// Set the purge date to midnight
-	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
-
-	// Purge the data
-	num, err := dataaccess.GCS.Purge(ctx, from)
-	if err != nil {
-		return fmt.Errorf("error purging data from GCS: %w", err)
-	}
-	slog.Info(fmt.Sprintf("Purged %d files from GCS", num))
 
 	return nil
 }

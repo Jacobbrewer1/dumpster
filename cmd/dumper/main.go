@@ -21,6 +21,7 @@ func main() {
 
 	subcommands.Register(new(versionCmd), "")
 	subcommands.Register(new(dumpCmd), "")
+	subcommands.Register(new(purgeCmd), "")
 
 	flag.Parse()
 	ctx := context.Background()
