@@ -51,7 +51,7 @@ func (p *purgeCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	// Initialize the GCS client
-	err := dataaccess.ConnectGCS(p.gcs)
+	err := dataaccess.ConnectGCS(ctx, p.gcs)
 	if err != nil {
 		slog.Error("error initializing GCS", slog.String("error", err.Error()))
 		return subcommands.ExitFailure

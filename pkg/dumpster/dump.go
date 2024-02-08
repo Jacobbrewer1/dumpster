@@ -73,7 +73,7 @@ func (d *Dumpster) DumpFile() (string, error) {
 
 // Dump creates a new dump of the database and returns the content.
 func (d *Dumpster) Dump() (string, error) {
-	schemaName, err := d.getSchemaName()
+	schemaName, err := d.GetSchemaName()
 	if err != nil {
 		return "", fmt.Errorf("error getting schema name: %w", err)
 	}
@@ -308,7 +308,7 @@ func (d *Dumpster) createTableValues(name string) (string, error) {
 	return strings.Join(dataText, ","), nil
 }
 
-func (d *Dumpster) getSchemaName() (string, error) {
+func (d *Dumpster) GetSchemaName() (string, error) {
 	sqlStmt := "SELECT DATABASE()"
 
 	// Prepare statement for reading data
