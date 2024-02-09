@@ -185,14 +185,13 @@ func (s *storageImpl) Purge(ctx context.Context, from time.Time) (int, error) {
 	return count, nil
 }
 
-func ConnectGCS(gcsBucket string) error {
+func ConnectGCS(ctx context.Context, gcsBucket string) error {
 	// Get the service account credentials from the environment variable.
 	gcsCredentials := os.Getenv(EnvGCSCredentials)
 	if gcsCredentials == "" {
 		return errors.New("no GCS credentials provided")
 	}
 
-	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(gcsCredentials)))
 	if err != nil {
 		return fmt.Errorf("error connecting to GCS: %w", err)
