@@ -9,12 +9,14 @@ DROP DATABASE IF EXISTS {{ .Database }};
 -- Table structure for table {{ .Name }}
 {{ .SQL }};
 
+{{ if .Values }}
 -- Data dump for table {{ .Name }}
 LOCK TABLES {{ .Name }} WRITE;
-{{ if .Values }}
+
 INSERT INTO {{ .Name }} VALUES {{ .Values }};
-{{ end }}
+
 UNLOCK TABLES;
+{{ end }}
 {{ end }}
 
 -- Dump completed at {{ .CompleteTime }}

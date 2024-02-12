@@ -82,7 +82,7 @@ func purgeData(ctx context.Context, days int) error {
 	// Check to see if the dumps directory exists
 	_, err := os.Stat("dumps")
 	if os.IsNotExist(err) {
-		slog.Debug("Dumps directory does not exist, no files to purge locally")
+		slog.Debug("Dumps directory does not exist locally, skipping local purge")
 	} else if err != nil {
 		return fmt.Errorf("error checking dump directory: %w", err)
 	} else {
