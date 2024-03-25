@@ -3,7 +3,7 @@ module github.com/Jacobbrewer1/dumpster
 go 1.21
 
 require (
-	cloud.google.com/go/storage v1.39.0
+	cloud.google.com/go/storage v1.39.1
 	github.com/go-sql-driver/mysql v1.8.0
 	github.com/google/subcommands v1.2.0
 	github.com/prometheus/client_golang v1.19.0
@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.112.0 // indirect
+	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute v1.24.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
