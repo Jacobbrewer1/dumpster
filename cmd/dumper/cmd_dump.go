@@ -93,7 +93,13 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	path := fmt.Sprintf("dumps/%s/%s.sql", schemaName, timestamp)
 
-	if err := c.uploadDump(ctx, fc, path); err != nil {
+	storageClient, err := dataaccess.ConnectGCS(ctx, c.gcs)
+	if err != nil {
+		slog.Error("error initializing GCS", slog.String(logging.KeyError, err.Error()))
+		return subcommands.ExitFailure
+	}
+
+	if err := c.uploadDump(ctx, storageClient, fc, path); err != nil {
 		slog.Error("error uploading dump", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
@@ -101,7 +107,7 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	slog.Info("Dump file created", slog.String("path", path))
 
 	// Purge the data
-	if err := purgeData(ctx, c.purge); err != nil {
+	if err := purgeData(ctx, storageClient, c.purge); err != nil {
 		slog.Error("error purging data", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
@@ -109,18 +115,13 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
-func (c *dumpCmd) uploadDump(ctx context.Context, fileContents string, path string) error {
+func (c *dumpCmd) uploadDump(ctx context.Context, sc dataaccess.Storage, fileContents string, path string) error {
 	if c.gcs == "" {
 		return nil
 	}
 
-	client, err := dataaccess.ConnectGCS(ctx, c.gcs)
-	if err != nil {
-		return fmt.Errorf("error connecting to GCS: %w", err)
-	}
-
 	// Upload the dump
-	err = client.SaveFile(ctx, path, []byte(fileContents))
+	err := sc.SaveFile(ctx, path, []byte(fileContents))
 	if err != nil {
 		return fmt.Errorf("error uploading dump: %w", err)
 	}
