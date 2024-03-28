@@ -20,8 +20,6 @@ const (
 	EnvGCSCredentials = "GCS_CREDENTIALS"
 )
 
-var GCS Storage
-
 type Storage interface {
 	// SaveFile uploads a file to the storage bucket. This will replace any existing file with the same name.
 	SaveFile(ctx context.Context, filePath string, file []byte) error
@@ -185,30 +183,30 @@ func (s *storageImpl) Purge(ctx context.Context, from time.Time) (int, error) {
 	return count, nil
 }
 
-func ConnectGCS(ctx context.Context, gcsBucket string) error {
+func ConnectGCS(ctx context.Context, gcsBucket string) (Storage, error) {
 	// Get the service account credentials from the environment variable.
 	gcsCredentials := os.Getenv(EnvGCSCredentials)
 	if gcsCredentials == "" {
-		return errors.New("no GCS credentials provided")
+		return nil, errors.New("no GCS credentials provided")
 	}
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(gcsCredentials)))
 	if err != nil {
-		return fmt.Errorf("error connecting to GCS: %w", err)
+		return nil, fmt.Errorf("error connecting to GCS: %w", err)
 	}
 	cs := client
 
 	// Get the bucket name from the environment variable and validate that it exists.
 	if gcsBucket == "" {
-		return errors.New("no GCS bucket provided")
+		return nil, errors.New("no GCS bucket provided")
 	}
 
 	_, err = cs.Bucket(gcsBucket).Attrs(ctx)
 	if err != nil {
-		return fmt.Errorf("error validating GCS bucket: %w", err)
+		return nil, fmt.Errorf("error validating GCS bucket: %w", err)
 	}
 
-	GCS = newStorage(cs, gcsBucket)
+	sc := newStorage(cs, gcsBucket)
 	slog.Debug("Connected to GCS")
-	return nil
+	return sc, nil
 }

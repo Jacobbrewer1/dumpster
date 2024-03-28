@@ -114,12 +114,13 @@ func (c *dumpCmd) uploadDump(ctx context.Context, fileContents string, path stri
 		return nil
 	}
 
-	if err := dataaccess.ConnectGCS(ctx, c.gcs); err != nil {
+	client, err := dataaccess.ConnectGCS(ctx, c.gcs)
+	if err != nil {
 		return fmt.Errorf("error connecting to GCS: %w", err)
 	}
 
 	// Upload the dump
-	err := dataaccess.GCS.SaveFile(ctx, path, []byte(fileContents))
+	err = client.SaveFile(ctx, path, []byte(fileContents))
 	if err != nil {
 		return fmt.Errorf("error uploading dump: %w", err)
 	}
