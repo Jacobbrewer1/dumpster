@@ -51,14 +51,14 @@ func (p *purgeCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	// Initialize the GCS client
-	err := dataaccess.ConnectGCS(ctx, p.gcs)
+	client, err := dataaccess.ConnectGCS(ctx, p.gcs)
 	if err != nil {
 		slog.Error("error initializing GCS", slog.String("error", err.Error()))
 		return subcommands.ExitFailure
 	}
 
 	// Purge the data
-	err = purgeData(ctx, p.days)
+	err = purgeData(ctx, client, p.days)
 	if err != nil {
 		slog.Error("error purging data", slog.String("error", err.Error()))
 		return subcommands.ExitFailure
@@ -67,7 +67,7 @@ func (p *purgeCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	return subcommands.ExitSuccess
 }
 
-func purgeData(ctx context.Context, days int) error {
+func purgeData(ctx context.Context, r dataaccess.Storage, days int) error {
 	if days == 0 {
 		slog.Debug("Days to purge is 0, data will not be purged")
 		return nil
@@ -137,7 +137,7 @@ func purgeData(ctx context.Context, days int) error {
 	}
 
 	// Purge the data
-	num, err := dataaccess.GCS.Purge(ctx, from)
+	num, err := r.Purge(ctx, from)
 	if err != nil {
 		return fmt.Errorf("error purging data from GCS: %w", err)
 	}
