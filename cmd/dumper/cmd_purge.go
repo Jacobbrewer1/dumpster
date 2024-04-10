@@ -1,9 +1,12 @@
 package main
 
 import (
+	"cloud.google.com/go/storage"
 	"context"
 	"flag"
 	"fmt"
+	"github.com/Jacobbrewer1/dumpster/pkg/logging"
+	"google.golang.org/api/option"
 	"log/slog"
 	"os"
 	"time"
@@ -51,14 +54,42 @@ func (p *purgeCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	// Initialize the GCS client
-	client, err := dataaccess.ConnectGCS(ctx, p.gcs)
-	if err != nil {
-		slog.Error("error initializing GCS", slog.String("error", err.Error()))
-		return subcommands.ExitFailure
+	var storageClient dataaccess.Storage
+
+	switch {
+	case p.gcs != "":
+		// Get the service account credentials from the environment variable.
+		gcsCredentials := os.Getenv(dataaccess.EnvGCSCredentials)
+		if gcsCredentials == "" {
+			slog.Error("GCS_CREDENTIALS environment variable not set")
+			return subcommands.ExitUsageError
+		}
+
+		client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(gcsCredentials)))
+		if err != nil {
+			slog.Error("error creating GCS client", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+		cs := client
+
+		_, err = cs.Bucket(p.gcs).Attrs(ctx)
+		if err != nil {
+			slog.Error("error checking bucket", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+
+		storageClient = dataaccess.NewGCS(cs, p.gcs)
+		if err != nil {
+			slog.Error("error initializing GCS", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+	default:
+		// Locally store the dump
+		storageClient = dataaccess.NewLocal()
 	}
 
 	// Purge the data
-	err = purgeData(ctx, client, p.days)
+	err := purgeData(ctx, storageClient, p.days)
 	if err != nil {
 		slog.Error("error purging data", slog.String("error", err.Error()))
 		return subcommands.ExitFailure
