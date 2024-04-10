@@ -1,18 +1,18 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"flag"
 	"fmt"
-	"github.com/Jacobbrewer1/dumpster/pkg/logging"
-	"google.golang.org/api/option"
 	"log/slog"
 	"os"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
+	"github.com/Jacobbrewer1/dumpster/pkg/logging"
 	"github.com/google/subcommands"
+	"google.golang.org/api/option"
 )
 
 type purgeCmd struct {

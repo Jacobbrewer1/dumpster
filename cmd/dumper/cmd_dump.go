@@ -1,21 +1,21 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"database/sql"
 	"flag"
 	"fmt"
-	"google.golang.org/api/option"
 	"log/slog"
 	"os"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
 	"github.com/Jacobbrewer1/dumpster/pkg/dumpster"
 	"github.com/Jacobbrewer1/dumpster/pkg/logging"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/subcommands"
+	"google.golang.org/api/option"
 )
 
 type dumpCmd struct {
