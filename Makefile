@@ -18,3 +18,7 @@ clean:
 	for d in cmd/*; do \
 		(cd $$d && make clean); \
 	done
+mocks:
+	@echo "Generating mocks"
+	# Loop through each directory. Inside the directory we want to use the directory name as the package name.
+	cd ./pkg/dataaccess && go generate

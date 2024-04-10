@@ -6,13 +6,16 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
 	"github.com/Jacobbrewer1/dumpster/pkg/dumpster"
 	"github.com/Jacobbrewer1/dumpster/pkg/logging"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/subcommands"
+	"google.golang.org/api/option"
 )
 
 type dumpCmd struct {
@@ -93,14 +96,42 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	path := fmt.Sprintf("dumps/%s/%s.sql", schemaName, timestamp)
 
-	storageClient, err := dataaccess.ConnectGCS(ctx, c.gcs)
-	if err != nil {
-		slog.Error("error initializing GCS", slog.String(logging.KeyError, err.Error()))
-		return subcommands.ExitFailure
+	var storageClient dataaccess.Storage
+
+	switch {
+	case c.gcs != "":
+		// Get the service account credentials from the environment variable.
+		gcsCredentials := os.Getenv(dataaccess.EnvGCSCredentials)
+		if gcsCredentials == "" {
+			slog.Error("GCS_CREDENTIALS environment variable not set")
+			return subcommands.ExitUsageError
+		}
+
+		client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(gcsCredentials)))
+		if err != nil {
+			slog.Error("error creating GCS client", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+		cs := client
+
+		_, err = cs.Bucket(c.gcs).Attrs(ctx)
+		if err != nil {
+			slog.Error("error checking bucket", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+
+		storageClient = dataaccess.NewGCS(cs, c.gcs)
+		if err != nil {
+			slog.Error("error initializing GCS", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+	default:
+		// Locally store the dump
+		storageClient = dataaccess.NewLocal()
 	}
 
-	if err := c.uploadDump(ctx, storageClient, fc, path); err != nil {
-		slog.Error("error uploading dump", slog.String(logging.KeyError, err.Error()))
+	if err := c.saveDump(ctx, storageClient, fc, path); err != nil {
+		slog.Error("error saving dump", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
 
@@ -115,11 +146,7 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
-func (c *dumpCmd) uploadDump(ctx context.Context, sc dataaccess.Storage, fileContents string, path string) error {
-	if c.gcs == "" {
-		return nil
-	}
-
+func (c *dumpCmd) saveDump(ctx context.Context, sc dataaccess.Storage, fileContents string, path string) error {
 	// Upload the dump
 	err := sc.SaveFile(ctx, path, []byte(fileContents))
 	if err != nil {

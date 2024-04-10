@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.licenses='GNU General Public License v3.0'
 WORKDIR /dumpster
 
 # Copy the binary from the build
-COPY ./bin/app /dumpster/app
+COPY ./bin/linux /dumpster/app
 
 RUN ["chmod", "+x", "./app"]
 

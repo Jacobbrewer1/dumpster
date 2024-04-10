@@ -6,7 +6,7 @@ DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 summary:
 	@echo "Building summary"
 	make linux
-	chmod +x bin/app
+	chmod +x bin/linux
 PR-approval:
 	@echo "Running PR CI"
 	go build ./...
@@ -17,7 +17,7 @@ ci: docker
 	docker push $(registry):$(hash) && docker push $(registry):latest
 linux: clean
 	@echo "Building for linux"
-	GOOS=linux GOARCH=amd64 go build -o bin/app -ldflags '-X main.Commit=$(hash) -X main.Date=$(DATE)'
+	GOOS=linux GOARCH=amd64 go build -o bin/linux -ldflags '-X main.Commit=$(hash) -X main.Date=$(DATE)'
 docker: linux
 	@echo "Building docker image"
 	# Build the docker image
