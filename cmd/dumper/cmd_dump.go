@@ -98,7 +98,13 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
-		vs, err := vc.GetSecrets("database")
+		err = vip.BindEnv("vault.path", "VAULT_DB_PATH")
+		if err != nil {
+			slog.Error("error binding environment variable", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
+
+		vs, err := vc.GetSecrets(vip.GetString("vault.path"))
 		if err != nil {
 			slog.Error("error getting database secrets", slog.String(logging.KeyError, err.Error()))
 			return subcommands.ExitFailure
