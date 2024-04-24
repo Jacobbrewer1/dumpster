@@ -79,7 +79,7 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	// Check if the database connection string is set
-	if c.dbConnStr == "" {
+	if c.dbConnStr == "" && !c.vaultEnabled {
 		slog.Error("database connection string not set")
 		f.Usage()
 		return subcommands.ExitUsageError
