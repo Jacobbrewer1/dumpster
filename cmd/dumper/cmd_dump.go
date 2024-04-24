@@ -110,8 +110,6 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
-		// -db-conn=monitoring:Nzg4YzdjODUtODdmMC00MTc5LWE4NzQtODZmYzFhY2E5MjQ2@tcp(data.bthree.uk:3306)/grafana?timeout=90s&multiStatements=true&parseTime=true
-
 		vip.Set("db.host", c.host)
 		vip.Set("db.schema", c.schema)
 
