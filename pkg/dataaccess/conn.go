@@ -8,7 +8,7 @@ import (
 )
 
 func GenerateConnectionStr(v *viper.Viper, vs vault.Secrets) string {
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s",
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?timeout=90s&multiStatements=true&parseTime=true",
 		vs["username"],
 		vs["password"],
 		v.GetString("db.host"),
