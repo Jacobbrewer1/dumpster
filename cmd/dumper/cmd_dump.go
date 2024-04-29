@@ -92,13 +92,15 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
+		err = vip.BindEnv("vault.credentials_path", "VAULT_CREDENTIALS_PATH")
+
 		vc, err := vault.NewClient(vip.GetString("vault.addr"))
 		if err != nil {
 			slog.Error("error creating vault client", slog.String(logging.KeyError, err.Error()))
 			return subcommands.ExitFailure
 		}
 
-		vs, err := vc.GetSecrets("database")
+		vs, err := vc.GetSecrets(vip.GetString("vault.credentials_path"))
 		if err != nil {
 			slog.Error("error getting database secrets", slog.String(logging.KeyError, err.Error()))
 			return subcommands.ExitFailure
