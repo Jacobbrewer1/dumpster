@@ -88,11 +88,15 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 
 		err = vip.BindEnv("vault.addr", "VAULT_ADDR")
 		if err != nil {
-			slog.Error("error binding environment variable", slog.String(logging.KeyError, err.Error()))
+			slog.Error("error binding VAULT_ADDR environment variable", slog.String(logging.KeyError, err.Error()))
 			return subcommands.ExitFailure
 		}
 
 		err = vip.BindEnv("vault.credentials_path", "VAULT_CREDENTIALS_PATH")
+		if err != nil {
+			slog.Error("error binding VAULT_CREDENTIALS_PATH environment variable", slog.String(logging.KeyError, err.Error()))
+			return subcommands.ExitFailure
+		}
 
 		vc, err := vault.NewClient(vip.GetString("vault.addr"))
 		if err != nil {
