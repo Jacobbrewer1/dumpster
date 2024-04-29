@@ -19,10 +19,16 @@ type table struct {
 	Values string
 }
 
+type trigger struct {
+	Name string
+	SQL  string
+}
+
 type dump struct {
 	Database      string
 	ServerVersion string
 	Tables        []*table
+	Triggers      []*trigger
 	CompleteTime  string
 }
 
@@ -104,6 +110,22 @@ func (d *Dumpster) Dump() (string, error) {
 		data.Tables = append(data.Tables, t)
 	}
 
+	// Get triggers
+	triggers, err := d.getTriggers()
+	if err != nil {
+		return "", fmt.Errorf("error getting triggers: %w", err)
+	}
+
+	// Get sql for each trigger
+	for _, tn := range triggers {
+		t, err := d.createTrigger(tn)
+		if err != nil {
+			return "", fmt.Errorf("error creating trigger: %w", err)
+		}
+
+		data.Triggers = append(data.Triggers, t)
+	}
+
 	// Set complete time
 	data.CompleteTime = time.Now().Format(time.RFC3339)
 
@@ -118,6 +140,111 @@ func (d *Dumpster) Dump() (string, error) {
 	}
 
 	return b.String(), nil
+}
+
+func (d *Dumpster) getTriggers() ([]string, error) {
+	sqlStmt := "SHOW TRIGGERS"
+
+	// Prepare statement for reading data
+	stmt, err := d.db.Prepare(sqlStmt)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing statement: %w", err)
+	}
+
+	defer func(stmt *sql.Stmt) {
+		if err := stmt.Close(); err != nil {
+			slog.Warn("error closing statement: %v", err)
+		}
+	}(stmt)
+
+	// Execute statement
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, fmt.Errorf("error executing statement: %w", err)
+	}
+
+	defer func(rows *sql.Rows) {
+		if err := rows.Close(); err != nil {
+			slog.Warn("error closing rows: %v", err)
+		}
+	}(rows)
+
+	// Read data
+	triggers := make([]string, 0)
+	for rows.Next() {
+		t := new(sql.NullString)
+		event := new(sql.NullString)
+		sqlTable := new(sql.NullString)
+		statement := new(sql.NullString)
+		timing := new(sql.NullString)
+		created := new(sql.NullString)
+		sqlMode := new(sql.NullString)
+		definer := new(sql.NullString)
+		characterSetClient := new(sql.NullString)
+		collationConnection := new(sql.NullString)
+		databaseCollation := new(sql.NullString)
+
+		if err := rows.Scan(t, event, sqlTable, statement, timing, created, sqlMode, definer,
+			characterSetClient, collationConnection, databaseCollation); err != nil {
+			return nil, fmt.Errorf("error scanning: %w", err)
+		}
+
+		if t.Valid {
+			triggers = append(triggers, t.String)
+		} else {
+			slog.Warn("trigger is not valid", slog.String("trigger", t.String))
+		}
+	}
+
+	return triggers, nil
+}
+
+func (d *Dumpster) createTrigger(name string) (t *trigger, err error) {
+	t = &trigger{
+		Name: name,
+	}
+
+	if t.SQL, err = d.createTriggerSQL(name); err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func (d *Dumpster) createTriggerSQL(name string) (string, error) {
+	sqlStmt := "SHOW CREATE TRIGGER " + name
+
+	// Prepare statement for reading data
+	stmt, err := d.db.Prepare(sqlStmt)
+	if err != nil {
+		return "", fmt.Errorf("error preparing statement: %w", err)
+	}
+
+	defer func(stmt *sql.Stmt) {
+		if err := stmt.Close(); err != nil {
+			slog.Warn("error closing statement: %v", err)
+		}
+	}(stmt)
+
+	// Execute statement
+	triggerName := new(sql.NullString)
+	sqlMode := new(sql.NullString)
+	originalStatement := new(sql.NullString)
+	characterSetClient := new(sql.NullString)
+	collationConnection := new(sql.NullString)
+	databaseCollation := new(sql.NullString)
+	createdAt := new(sql.NullString)
+
+	if err := stmt.QueryRow().Scan(triggerName, sqlMode, originalStatement, characterSetClient,
+		collationConnection, databaseCollation, createdAt); err != nil {
+		return "", fmt.Errorf("error executing statement: %w", err)
+	}
+
+	if originalStatement.Valid {
+		return originalStatement.String, nil
+	} else {
+		return "", fmt.Errorf("error getting trigger SQL: %w", err)
+	}
 }
 
 func (d *Dumpster) getTables() ([]string, error) {

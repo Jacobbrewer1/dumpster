@@ -3,7 +3,8 @@ package dumpster
 const tmpl = `
 -- Server version	{{ .ServerVersion }}
 
-DROP DATABASE IF EXISTS {{ .Database }};
+CREATE DATABASE IF NOT EXISTS {{ .Database }};
+USE {{ .Database }};
 
 SET FOREIGN_KEY_CHECKS=0;
 {{ range .Tables}}
@@ -20,6 +21,11 @@ UNLOCK TABLES;
 {{- end }}
 
 SET FOREIGN_KEY_CHECKS=1;
+
+{{ range .Triggers }}
+-- Trigger structure for trigger {{ .Name }}
+{{ .SQL }};
+{{ end }}
 
 -- Dump completed at {{ .CompleteTime }}
 `
