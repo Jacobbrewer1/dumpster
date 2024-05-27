@@ -8,8 +8,8 @@ require (
 	cloud.google.com/go/storage v1.41.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/subcommands v1.2.0
-	github.com/hashicorp/vault/api v1.13.0
-	github.com/hashicorp/vault/api/auth/approle v0.6.0
+	github.com/hashicorp/vault/api v1.14.0
+	github.com/hashicorp/vault/api/auth/approle v0.7.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
@@ -43,7 +43,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.6 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.6 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
