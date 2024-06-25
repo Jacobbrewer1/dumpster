@@ -24,3 +24,5 @@ go.work
 
 # Ignore all SQL files
 *.sql
+
+**/bin/**
