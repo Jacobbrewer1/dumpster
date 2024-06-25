@@ -1,14 +1,16 @@
 package dumpster
 
-import "database/sql"
+import (
+	"github.com/jmoiron/sqlx"
+)
 
 type Dumpster struct {
 	// db is the database to dump
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewDumpster creates a new dumpster
-func NewDumpster(db *sql.DB) *Dumpster {
+func NewDumpster(db *sqlx.DB) *Dumpster {
 	return &Dumpster{
 		db: db,
 	}

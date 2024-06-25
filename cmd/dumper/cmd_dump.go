@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -13,30 +12,16 @@ import (
 	"github.com/Jacobbrewer1/dumpster/pkg/dataaccess"
 	"github.com/Jacobbrewer1/dumpster/pkg/dumpster"
 	"github.com/Jacobbrewer1/dumpster/pkg/logging"
-	"github.com/Jacobbrewer1/dumpster/pkg/vault"
+	"github.com/caarlos0/env/v11"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/subcommands"
-	"github.com/spf13/viper"
+	"github.com/jmoiron/sqlx"
 	"google.golang.org/api/option"
 )
 
 type dumpCmd struct {
 	// gcs is the bucket to upload the dump to. Setting this will enable GCS.
 	gcs string
-
-	// dbConnStr is the connection string to the database.
-	dbConnStr string
-
-	// vaultEnabled is whether to use vault for secrets.
-	//
-	// This cannot be used in tandem with the dbConnStr flag.
-	vaultEnabled bool
-
-	// host is the host of the database. Only used if vault is enabled.
-	host string
-
-	// schema is the schema of the database. Only used if vault is enabled.
-	schema string
 
 	// purge is the number of days to keep data for. If 0 (or not set), data will not be purged.
 	purge int
@@ -58,10 +43,6 @@ func (c *dumpCmd) Usage() string {
 
 func (c *dumpCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&c.gcs, "gcs", "", "The GCS bucket to upload the dump to (Requires GCS_CREDENTIALS environment variable to be set)")
-	f.StringVar(&c.dbConnStr, "db-conn", "", "The connection string to the database")
-	f.BoolVar(&c.vaultEnabled, "vault", false, "Whether to use vault to access the database secrets (Requires VAULT_ADDR, VAULT_APPROLE_ID and VAULT_APPROLE_SECRET_ID environment variables to be set)")
-	f.StringVar(&c.host, "host", "", "The host of the database (Only used if vault is enabled)")
-	f.StringVar(&c.schema, "schema", "", "The schema of the database (Only used if vault is enabled)")
 	f.IntVar(&c.purge, "purge", 0, "The number of days to keep data for. If 0 (or not set), data will not be purged.")
 }
 
@@ -72,62 +53,21 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	if c.vaultEnabled && c.dbConnStr != "" {
-		slog.Error("cannot use vault and db-conn flags together")
-		f.Usage()
-		return subcommands.ExitUsageError
-	}
-
-	// Check if the database connection string is set
-	if c.dbConnStr == "" && !c.vaultEnabled {
-		slog.Error("database connection string not set")
-		f.Usage()
-		return subcommands.ExitUsageError
-	} else if c.vaultEnabled {
-		vip := viper.New()
-
-		err = vip.BindEnv("vault.addr", "VAULT_ADDR")
-		if err != nil {
-			slog.Error("error binding VAULT_ADDR environment variable", slog.String(logging.KeyError, err.Error()))
-			return subcommands.ExitFailure
-		}
-
-		err = vip.BindEnv("vault.credentials_path", "VAULT_CREDENTIALS_PATH")
-		if err != nil {
-			slog.Error("error binding VAULT_CREDENTIALS_PATH environment variable", slog.String(logging.KeyError, err.Error()))
-			return subcommands.ExitFailure
-		}
-
-		vc, err := vault.NewClient(vip.GetString("vault.addr"))
-		if err != nil {
-			slog.Error("error creating vault client", slog.String(logging.KeyError, err.Error()))
-			return subcommands.ExitFailure
-		}
-
-		vs, err := vc.GetSecrets(vip.GetString("vault.credentials_path"))
-		if err != nil {
-			slog.Error("error getting database secrets", slog.String(logging.KeyError, err.Error()))
-			return subcommands.ExitFailure
-		}
-
-		vip.Set("db.host", c.host)
-		vip.Set("db.schema", c.schema)
-
-		connStr := dataaccess.GenerateConnectionStr(vip, vs)
-		c.dbConnStr = connStr
-
-		slog.Debug("database connection setup from vault")
+	dbConnEnv := new(DatabaseConnection)
+	if err := env.Parse(dbConnEnv); err != nil {
+		slog.Error("error parsing environment variables", slog.String(logging.KeyError, err.Error()))
+		return subcommands.ExitFailure
 	}
 
 	// Open database connection
-	db, err := sql.Open("mysql", c.dbConnStr)
+	db, err := sqlx.Open("mysql", dbConnEnv.ConnStr)
 	if err != nil {
 		slog.Error("error opening database", slog.String(logging.KeyError, err.Error()))
 		return subcommands.ExitFailure
 	}
 
 	// Close the database connection
-	defer func(db *sql.DB) {
+	defer func(db *sqlx.DB) {
 		if err := db.Close(); err != nil {
 			slog.Warn("error closing database: %v", err)
 		}

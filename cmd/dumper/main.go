@@ -20,6 +20,7 @@ func main() {
 	subcommands.Register(subcommands.CommandsCommand(), "")
 
 	subcommands.Register(new(versionCmd), "")
+	subcommands.Register(new(ddlCmd), "")
 	subcommands.Register(new(dumpCmd), "")
 	subcommands.Register(new(purgeCmd), "")
 
