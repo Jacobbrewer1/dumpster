@@ -1,11 +1,9 @@
-# env
+<p align="center">
+  <img alt="GoReleaser Logo" src="https://becker.software/env.png" height="140" />
+  <p align="center">A simple, zero-dependencies library to parse environment variables into structs.</p>
+</p>
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?branch=main&style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
-[![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v11)
-
-A simple and zero-dependencies library to parse environment variables into
-`struct`s.
+---
 
 ## Used and supported by
 
@@ -478,6 +476,61 @@ func main() {
 }
 ```
 
+### Complex objects inside array (slice)
+
+You can set sub-struct field values inside a slice by naming the environment variables with sequential numbers starting from 0 (without omitting numbers in between) and an underscore.
+It is possible to use prefix tag too.
+
+Here's an example with and without prefix tag:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env/v11"
+)
+
+type Test struct {
+	Str string `env:"STR"`
+	Num int    `env:"NUM"`
+}
+type ComplexConfig struct {
+	Baz []Test  `env:",init"`
+	Bar []Test  `envPrefix:"BAR"`
+	Foo *[]Test `envPrefix:"FOO_"`
+}
+
+func main() {
+	cfg := &ComplexConfig{}
+	opts := env.Options{
+		Environment: map[string]string{
+			"0_STR":     "bt",
+			"1_NUM":     "10",
+
+			"FOO_0_STR": "b0t",
+			"FOO_1_STR": "b1t",
+			"FOO_1_NUM": "212",
+
+			"BAR_0_STR": "f0t",
+			"BAR_0_NUM": "101",
+			"BAR_1_STR": "f1t",
+			"BAR_1_NUM": "111",
+		},
+	}
+
+	// Load env vars.
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg)
+}
+```
+
 ### On set hooks
 
 You might want to listen to value sets and, for example, log something or do
@@ -636,6 +689,16 @@ func main() {
 >
 > If you want to check if an specific error is in the chain, you can also use
 > `errors.Is()`.
+
+## Badges
+
+[![Release](https://img.shields.io/github/release/caarlos0/env.svg?style=for-the-badge)](https://github.com/goreleaser/goreleaser/releases/latest)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=for-the-badge)](/LICENSE.md)
+[![Build status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?style=for-the-badge&branch=main)](https://github.com/caarlos0/env/actions?workflow=build)
+[![Codecov branch](https://img.shields.io/codecov/c/github/caarlos0/env/main.svg?style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge)](http://godoc.org/github.com/caarlos0/env/v11)
+[![Powered By: GoReleaser](https://img.shields.io/badge/powered%20by-goreleaser-green.svg?style=for-the-badge)](https://github.com/goreleaser)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=for-the-badge)](https://conventionalcommits.org)
 
 ## Related projects
 

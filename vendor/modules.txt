@@ -43,7 +43,7 @@ filippo.io/edwards25519/field
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/caarlos0/env/v11 v11.1.0
+# github.com/caarlos0/env/v11 v11.2.0
 ## explicit; go 1.18
 github.com/caarlos0/env/v11
 # github.com/cenkalti/backoff/v3 v3.0.0
