@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	cloud.google.com/go/storage v1.42.0
-	github.com/caarlos0/env/v11 v11.2.0
+	github.com/caarlos0/env/v11 v11.2.2
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/subcommands v1.2.0
 	github.com/hashicorp/vault/api v1.14.0
