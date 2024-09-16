@@ -9,7 +9,7 @@ require (
 	github.com/caarlos0/env/v11 v11.2.2
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/subcommands v1.2.0
-	github.com/hashicorp/vault/api v1.14.0
+	github.com/hashicorp/vault/api v1.15.0
 	github.com/hashicorp/vault/api/auth/approle v0.7.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/prometheus/client_golang v1.20.3
@@ -27,7 +27,7 @@ require (
 	cloud.google.com/go/iam v1.2.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v3 v3.0.0 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chigopher/pathlib v0.19.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
