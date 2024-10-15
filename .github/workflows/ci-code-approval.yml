@@ -64,8 +64,8 @@ jobs:
       - name: Make
         run: make PR-approval
 
-  storage-generation: # Checks to ensure that the models generation is up-to-date
-    name: "Storage Generation"
+  code-generation:
+    name: "Code Generation"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -82,8 +82,8 @@ jobs:
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: git config --global url."https://x:${GITHUB_API_TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: "Run Mock Generation"
-        run: make mocks
+      - name: "Run Code Generation"
+        run: make codegen
 
       - name: "fmt"
         run: go fmt ./...
