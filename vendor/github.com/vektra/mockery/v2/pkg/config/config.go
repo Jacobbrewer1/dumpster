@@ -41,6 +41,7 @@ type Config struct {
 	Cpuprofile           string                 `mapstructure:"cpuprofile"`
 	Dir                  string                 `mapstructure:"dir"`
 	DisableConfigSearch  bool                   `mapstructure:"disable-config-search"`
+	DisableFuncMocks     bool                   `mapstructure:"disable-func-mocks"`
 	DisableVersionString bool                   `mapstructure:"disable-version-string"`
 	DryRun               bool                   `mapstructure:"dry-run"`
 	ExcludeRegex         string                 `mapstructure:"exclude-regex"`
@@ -188,7 +189,7 @@ func (c *Config) GetPackages(ctx context.Context) ([]string, error) {
 	if !ok {
 		msg := "packages section is of the wrong type"
 		log.Error().Msg(msg)
-		return []string{}, fmt.Errorf(msg)
+		return []string{}, errors.New(msg)
 	}
 	packageList := []string{}
 	for key := range packageSection {
@@ -395,7 +396,7 @@ func (c *Config) GetInterfaceConfig(ctx context.Context, packageName string, int
 			return []*Config{pkgConfigCopy}, nil
 		}
 		msgString := "bad type provided for interface config"
-		log.Error().Msgf(msgString)
+		log.Error().Msg(msgString)
 		return nil, stackerr.NewStackErr(errors.New(msgString))
 	}
 
@@ -708,8 +709,15 @@ func (c *Config) discoverRecursivePackages(ctx context.Context) error {
 			subPkgCtx := subPkgLog.WithContext(pkgCtx)
 
 			if len(conf.Exclude) > 0 {
-				p := pathlib.NewPath(subPkg)
-				relativePath, err := p.RelativeToStr(pkgPath)
+				// pass in the forward-slash as this is a package and the os.PathSeparator
+				// cannot be used here as it fails on windows.
+				p := pathlib.NewPath(subPkg, pathlib.PathWithSeperator("/"))
+				relativePath, err := p.RelativeTo(
+					pathlib.NewPath(
+						pkgPath, pathlib.PathWithAfero(p.Fs()),
+						pathlib.PathWithSeperator("/"),
+					),
+				)
 				if err != nil {
 					return stackerr.NewStackErrf(err, "failed to get path for %s relative to %s", subPkg, pkgPath)
 				}
@@ -788,7 +796,7 @@ func (c *Config) mergeInConfig(ctx context.Context) error {
 			// wasn't defined in the yaml.
 			msg := "config section does not exist for package, this should never happen"
 			pkgLog.Error().Msg(msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		pkgLog.Trace().Msg("got config section for package")
