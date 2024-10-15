@@ -1,8 +1,8 @@
 module github.com/Jacobbrewer1/dumpster
 
-go 1.22
+go 1.23
 
-toolchain go1.22.2
+toolchain go1.23.2
 
 require (
 	cloud.google.com/go/storage v1.43.0
@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/client_golang v1.20.4
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	github.com/vektra/mockery/v2 v2.42.3
+	github.com/vektra/mockery/v2 v2.46.3
 	google.golang.org/api v0.200.0
 )
 
