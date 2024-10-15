@@ -11,6 +11,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/Jacobbrewer1/dumpster/pkg/logging"
 )
 
 type table struct {
@@ -65,7 +67,7 @@ func (d *Dumpster) DumpFile() (string, error) {
 
 	defer func(f *os.File) {
 		if err := f.Close(); err != nil {
-			slog.Warn("error closing file: %v", err)
+			slog.Warn("Error closing file", slog.String(logging.KeyError, err.Error()))
 		}
 	}(f)
 
@@ -153,7 +155,7 @@ func (d *Dumpster) getTriggers() ([]string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 
@@ -165,7 +167,7 @@ func (d *Dumpster) getTriggers() ([]string, error) {
 
 	defer func(rows *sql.Rows) {
 		if err := rows.Close(); err != nil {
-			slog.Warn("error closing rows: %v", err)
+			slog.Warn("Error closing rows", slog.String(logging.KeyError, err.Error()))
 		}
 	}(rows)
 
@@ -222,7 +224,7 @@ func (d *Dumpster) createTriggerSQL(name string) (string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 
@@ -258,7 +260,7 @@ func (d *Dumpster) getTables() ([]string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 
@@ -270,7 +272,7 @@ func (d *Dumpster) getTables() ([]string, error) {
 
 	defer func(rows *sql.Rows) {
 		if err := rows.Close(); err != nil {
-			slog.Warn("error closing rows: %v", err)
+			slog.Warn("Error closing rows", slog.String(logging.KeyError, err.Error()))
 		}
 	}(rows)
 
@@ -303,7 +305,7 @@ func (d *Dumpster) getServerVersion() (string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 
@@ -348,7 +350,7 @@ func (d *Dumpster) createTableSQL(name string) (string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 
@@ -381,7 +383,7 @@ func (d *Dumpster) createTableValues(name string) (string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 
@@ -393,7 +395,7 @@ func (d *Dumpster) createTableValues(name string) (string, error) {
 
 	defer func(rows *sql.Rows) {
 		if err := rows.Close(); err != nil {
-			slog.Warn("error closing rows: %v", err)
+			slog.Warn("Error closing rows", slog.String(logging.KeyError, err.Error()))
 		}
 	}(rows)
 
@@ -446,7 +448,7 @@ func (d *Dumpster) GetSchemaName() (string, error) {
 
 	defer func(stmt *sql.Stmt) {
 		if err := stmt.Close(); err != nil {
-			slog.Warn("error closing statement: %v", err)
+			slog.Warn("Error closing statement", slog.String(logging.KeyError, err.Error()))
 		}
 	}(stmt)
 

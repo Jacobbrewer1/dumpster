@@ -69,7 +69,7 @@ func (c *dumpCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	// Close the database connection
 	defer func(db *sqlx.DB) {
 		if err := db.Close(); err != nil {
-			slog.Warn("error closing database: %v", err)
+			slog.Warn("Error closing database connection", slog.String(logging.KeyError, err.Error()))
 		}
 	}(db)
 
